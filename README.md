@@ -10,8 +10,8 @@ everything is loaded.
 ### Heap/PriorityQueue Performance:
 
 You can run the benchmark for this at:
- - https://azeemba.github.io/wasm-runtime-performance/output/data_O3.html (optimized C++)
- - https://azeemba.github.io/wasm-runtime-performance/output/data.html (unoptimized)
+ - [https://azeemba.github.io/wasm-runtime-performance/output/data_O3.html](https://azeemba.github.io/wasm-runtime-performance/output/data_O3.html) (optimized C++)
+ - [https://azeemba.github.io/wasm-runtime-performance/output/data.html](https://azeemba.github.io/wasm-runtime-performance/output/data.html) (unoptimized)
 
 Things being compared:
 
