@@ -19,8 +19,10 @@ void pop() {
 }
 
 void bulkInsert(int N) {
+  int j;
   for (int i = N; i > 0; --i) {
     Q.push(i);
+    j = Q.top();
   }
 }
 

@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # Generate unoptimized version
-emcc main.cpp -o output/data.html -s EXPORTED_FUNCTIONS="['_top', '_insert', '_pop', '_main', '_bulkInsert', '_bulkPops']"
- -s WASM=1 --shell-file  shell_call.html
+emcc main.cpp -o output/data.html -s EXPORTED_FUNCTIONS="['_top', '_insert', '_pop', '_main', '_bulkInsert', '_bulkPops']" -s WASM=1 --shell-file  shell_call.html
 
 
 # Generate optimized version

@@ -114,8 +114,10 @@ runButton.addEventListener('click', function(e) {
   Module.print("WASM:");
   var result = average2(
       function () {
+        var j;
         for (var i = N; i > 0; --i) {
           insert(i);
+          j = top();
         }
       },
       function() {
@@ -155,8 +157,10 @@ runButton.addEventListener('click', function(e) {
   var x = new FastPriorityQueue();
   result = average2(
       function() {
+        var j;
         for (var i = N; i > 0; --i) {
           x.add(i);
+          j = x.peek();
         }
       },
       function() {
@@ -179,8 +183,10 @@ runButton.addEventListener('click', function(e) {
   var h = new Heap();
   result = average2(
       function() {
+        var j;
         for (var i = N; i > 0; --i) {
           h.push(i);
+          j = h.peek();
         }
       },
       function() {
