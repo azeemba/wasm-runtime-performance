@@ -30,16 +30,6 @@ var Module = {
       console.error(text);
     }
   },
-  canvas: (function() {
-    var canvas = document.getElementById('canvas');
-
-    // As a default initial behavior, pop up an alert when webgl context is lost. To make your
-    // application robust, you may want to override this behavior before shipping!
-    // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
-    canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
-
-    return canvas;
-  })(),
   setStatus: function(text) {
     if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
     if (text === Module.setStatus.text) return;
@@ -75,6 +65,33 @@ window.onerror = function() {
   };
 };
 
+// Stuff above is copied almost entirely from
+// minimal-shell.html from emsdk
+// Stuff below is the actual code
+
+function averageN(funs, times) {
+  // heat up anything
+  // so call all the functions
+  funs.forEach(function(f) {
+    f();
+  });
+
+  totalTimes = [0];
+  totalTimes[funs.length] = 0;
+  totalTimes.fill(0);
+
+  for (var i = 0; i < times; ++i) {
+    funs.forEach(function(f, index) {
+      var start = performance.now();
+      f();
+      var stop = performance.now();
+      totalTimes[index] += (stop - start);
+    });
+  }
+
+  return totalTimes.map(function(time) { return time/times; });
+}
+
 function average2(fun1, fun2, times) {
   fun1Time = 0;
   fun2Time = 0;
@@ -102,6 +119,16 @@ function average2(fun1, fun2, times) {
 
 var runButton = document.getElementById('run');
 runButton.addEventListener('click', function(e) {
+  var option = document.getElementById('benchmark');
+  if (option.value === 'priorityQueue') {
+    priorityQueueBenchmark();
+  }
+  else if (option.value === 'floydWarshall') {
+    floydWarshallBenchmark();
+  }
+});
+
+function priorityQueueBenchmark() {
   var insert = Module.cwrap( 'insert', 'number', ['number']);
   var top = Module.cwrap( 'top', 'number', []);
   var pop = Module.cwrap( 'pop', 'number', []);
@@ -203,6 +230,104 @@ runButton.addEventListener('click', function(e) {
   Module.print("On average, peek+pop of " + N +  " elems took in ms: ",
       result.second);
   Module.print(" ");
+}
 
-});
 
+function constructGraph(
+    approxNumNodes, numEdges, createNodeFn, addEdgeFn) {
+
+  // Assume PI_MINUS_3 
+  var logOfNumNodes = Math.round(Math.log10(approxNumNodes));
+  if (PI_MINUS_3.length < (numEdges+1)*logOfNumNodes) {
+    Module.print("Not enough data to create edges");
+    return;
+  }
+
+  // Suppose logOfNumNodes is 2, so we want
+  // to create 2-digit nodes
+  // So initialize 00, 01,...10, 11, ... 99
+  for (var i = 0; i < Math.pow(10, logOfNumNodes); ++i) {
+    var str = i.toString();
+    var pad = logOfNumNodes - str.length;
+    var nodeId = '0'.repeat(pad) + str;
+    createNodeFn(nodeId);
+  }
+
+  var cur, next;
+  for (var i = 0; i < numEdges; ++i)
+  {
+    // we read 141592.. as saying
+    // there is an edge between node 14 and node 15
+    // and an edge between node 15 and 92
+    // assuming logOfNumNodes is 2
+    if (!next) {
+      cur = "";
+      for (var j = 0; j < logOfNumNodes; ++j) {
+        cur += PI_MINUS_3[i*logOfNumNodes + j];
+      }
+    }
+    else {
+      cur = next;
+    }
+
+    next = "";
+    for (var j = 0; j < logOfNumNodes; ++j) {
+      next += PI_MINUS_3[(i+1)*logOfNumNodes + j];
+    }
+    addEdgeFn(cur, next, Math.abs(cur - next));
+  }
+}
+
+
+function floydWarshallBenchmark() {
+  Module.print("floydWarshall");
+
+  var NUM_NODES = 100;
+  var NUM_EDGES = 500;
+
+
+  var largest = 0;
+  var avgTimes = averageN([function(){
+    var g = new graphlib.Graph({directed: false});
+    constructGraph(NUM_NODES, NUM_EDGES, g.setNode.bind(g), g.setEdge.bind(g));
+
+    var more = graphlib.alg.floydWarshall(
+        g,
+        function(e){
+          return g.edge(e);
+        });
+    Object.keys(more).forEach(function(key) {
+      Object.keys(more[key]).forEach(function(innerKey) {
+        if (more[key][innerKey].distance != Infinity &&
+            more[key][innerKey].distance > largest) {
+          largest = more[key][innerKey].distance 
+        }
+      });
+    });
+  }], 100);
+  Module.print(
+      "FloydWarshall in JS with V: " +
+      NUM_NODES + " E: " + NUM_EDGES + " took in ms: " +
+      avgTimes[0]);
+
+  var initWAG= Module.cwrap( 'initGraph', 'number', []);
+  var addEdgeFnWAG = Module.cwrap( 'addEdge', null, ['number', 'number', 'number']);
+  var floydWarshallWAG = Module.cwrap( 'floydWarshall', 'number', []);
+
+  var wasmLargest;
+  var avgTimesWASM = averageN([function(){
+    initWAG(NUM_NODES);
+    constructGraph(
+        NUM_NODES,
+        NUM_EDGES,
+        function() {},
+        function(uStr, vStr, weight) {
+          addEdgeFnWAG(parseInt(uStr, 10), parseInt(vStr, 10), weight);
+        });
+    wasmLargest = floydWarshallWAG();
+  }], 100);
+  Module.print(
+      "FloydWarshall in WASM with V: " +
+      NUM_NODES + " E: " + NUM_EDGES + " took in ms: " +
+      avgTimesWASM[0]);
+}

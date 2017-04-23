@@ -6,12 +6,36 @@ wasm is more efficient than parsing JS. The work here doesn't take that into
 account. It only looks at performance of actually executing the code after
 everything is loaded.
 
-
-### Heap/PriorityQueue Performance:
-
-You can run the benchmark for this at:
+You can run the following benchmarks at:
  - [https://azeemba.github.io/wasm-runtime-performance/output/data_O3.html](https://azeemba.github.io/wasm-runtime-performance/output/data_O3.html) (optimized C++)
  - [https://azeemba.github.io/wasm-runtime-performance/output/data.html](https://azeemba.github.io/wasm-runtime-performance/output/data.html) (unoptimized)
+
+
+
+### Floyd Warshall
+
+Thing being compared:
+ - WASM based:
+   - [boost::Graph's](http://www.boost.org/doc/libs/1_64_0/libs/graph/doc/floyd_warshall_shortest.html) implementation of Floyd Warshall 
+ - [graphlib.js](https://github.com/cpettitt/graphlib/wiki/API-Reference#alg-floyd-warshall)
+
+ The results here are very interesting. Here is the output when web assembly is generated with no optimization: 
+
+```
+FloydWarshall in JS with V: 100 E: 500 took in ms: 62.16005000000006
+FloydWarshall in WASM with V: 100 E: 500 took in ms: 1235.4100999999998
+```
+
+Here is the output when web assembly is generated at -O3 level:
+
+```
+FloydWarshall in JS with V: 100 E: 500 took in ms: 61.1135
+FloydWarshall in WASM with V: 100 E: 500 took in ms: 10.156900000000315
+```
+
+The performance of wasm improved by 3 orders of magnitude! It went from being much worse than the JS to being much better!
+
+### Heap/PriorityQueue Performance:
 
 Things being compared:
 
@@ -46,6 +70,7 @@ Though surprisingly the behavior is a lot less significant when pop-ing the elem
 
 ### Maintainence:
 
+Requires boost and emsdk
 The wasm, html, js can be generated via `./generate_output.sh`
 
 
