@@ -11,6 +11,8 @@
 #include <emscripten/emscripten.h>
 #else
 #define EMSCRIPTEN_KEEPALIVE
+#include "fw.h"
+#include <chrono>
 #endif
 
 
@@ -73,11 +75,24 @@ int EMSCRIPTEN_KEEPALIVE floydWarshall() {
 
 int main(int argc, char ** argv) {
     printf("In main\n");
-
     initGraph(4);
     addEdge(0, 1, 1);
     addEdge(0, 2, 2);
     addEdge(1, 2, 3);
     addEdge(2, 3, 5);
     std::cout << floydWarshall() << std::endl;
+
+#ifndef COMPILING_TO_WASM
+    std::chrono::microseconds ms;
+    for (int i = 0; i < 100; ++i) {
+      initGraph(100);
+      constructGraph(100, 500);
+      auto t1 = std::chrono::high_resolution_clock::now();
+      floydWarshall();
+      auto t2 = std::chrono::high_resolution_clock::now();
+      ms = ms + std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1);
+    }
+    std::cout << (ms.count()/1000)/100 << " millis";
+#endif
+
 }
